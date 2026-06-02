@@ -1,20 +1,23 @@
+import sys
+from pathlib import Path
+
 import pandas as pd
-from sqlalchemy import create_engine
 
-df = pd.read_parquet(
-    "data/cleaned_taxi.parquet"
-)
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
-engine = create_engine(
-    "sqlite:///taxi.db"
-)
+from db import get_engine
+
+df = pd.read_parquet(ROOT / "data" / "cleaned_taxi.parquet")
+
+engine = get_engine()
 
 df.to_sql(
     "trips",
     engine,
     if_exists="replace",
     index=False,
-    chunksize=50000
+    chunksize=50000,
 )
 
-print("Database loaded")
+print(f"Loaded {len(df):,} trips into PostgreSQL")

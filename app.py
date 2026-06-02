@@ -1,18 +1,12 @@
 import pandas as pd
 import streamlit as st
-from sqlalchemy import create_engine
 
+from db import get_engine
 
-#Heading
 st.title("NYC Taxi Dashboard")
-#Parsing
-df = pd.read_parquet(
-    "data/cleaned_taxi.parquet"
-)
-#SQL
-engine = create_engine(
-    "sqlite:///taxi.db"
-)
+
+df = pd.read_parquet("data/cleaned_taxi.parquet")
+engine = get_engine()
 
 
 
