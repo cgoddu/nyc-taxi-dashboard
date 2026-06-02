@@ -5,92 +5,69 @@ from db import get_engine
 
 st.title("NYC Taxi Dashboard")
 
-df = pd.read_parquet("data/cleaned_taxi.parquet")
 engine = get_engine()
 
+summary = pd.read_sql(
+    """
+    SELECT
+        COUNT(*) AS trips,
+        AVG(fare_amount) AS avg_fare,
+        AVG(tip_amount) AS avg_tip,
+        AVG(trip_distance) AS avg_distance
+    FROM trips
+    """,
+    engine,
+).iloc[0]
 
+st.metric("Total Trips", f"{int(summary['trips']):,}")
+st.metric("Average Fare", f"${summary['avg_fare']:.2f}")
+st.metric("Average Tip", f"${summary['avg_tip']:.2f}")
+st.metric("Average Trip Distance", f"{summary['avg_distance']:.2f} miles")
 
-#Summary
-st.metric(
-    "Total Trips",
-    f"{len(df):,}"
-)
-st.metric(
-    "Average Fare",
-    f"${df['fare_amount'].mean():.2f}"
-)
-st.metric(
-    "Average Tip",
-    f"${df['tip_amount'].mean():.2f}"
-)
-st.metric(
-    "Average Trip Distance",
-    f"{df['trip_distance'].mean():.2f} miles"
-)
-
-#Aggregate
-#TripsByHour
-trips_by_hour = (
-    df.groupby("hour")
-      .size()
-      .reset_index(name="trip_count")
+trips_by_hour = pd.read_sql(
+    """
+    SELECT hour, COUNT(*) AS trip_count
+    FROM trips
+    GROUP BY hour
+    ORDER BY hour
+    """,
+    engine,
 )
 st.subheader("Trip Volume by Hour")
-st.bar_chart(
-    trips_by_hour.set_index("hour")
-)
-#SQL
-query = """
-SELECT
-    hour,
-    COUNT(*) AS trip_count
-FROM trips
-GROUP BY hour
-ORDER BY hour
-"""
-sql_trips = pd.read_sql(query, engine)
-st.subheader("Trip Volume by Hour (SQL)")
-st.bar_chart(
-    sql_trips.set_index("hour")
-)
+st.bar_chart(trips_by_hour.set_index("hour"))
 
-#FareByHour
-fare_by_hour = (
-    df.groupby("hour")["fare_amount"]
-      .mean()
+fare_by_hour = pd.read_sql(
+    """
+    SELECT hour, AVG(fare_amount) AS avg_fare
+    FROM trips
+    GROUP BY hour
+    ORDER BY hour
+    """,
+    engine,
 )
 st.subheader("Average Fare by Hour")
-st.line_chart(fare_by_hour)
-#SQL
-query = """
-SELECT
-    hour,
-    AVG(fare_amount) avg_fare
-FROM trips
-GROUP BY hour
-ORDER BY hour
-"""
-sql_result = pd.read_sql(
-    query,
-    engine
-)
-st.subheader("Average Fare by Hour (SQL)")
-st.line_chart(
-    sql_result.set_index("hour")
-)
+st.line_chart(fare_by_hour.set_index("hour"))
 
-#TipByHour
-tip_by_hour = (
-    df.groupby("hour")["tip_amount"]
-      .mean()
+tip_by_hour = pd.read_sql(
+    """
+    SELECT hour, AVG(tip_amount) AS avg_tip
+    FROM trips
+    GROUP BY hour
+    ORDER BY hour
+    """,
+    engine,
 )
 st.subheader("Average Tip by Hour")
-st.line_chart(tip_by_hour)
+st.line_chart(tip_by_hour.set_index("hour"))
 
-#DistByHour
-distance_by_hour = (
-    df.groupby("hour")["trip_distance"]
-      .mean()
+distance_by_hour = pd.read_sql(
+    """
+    SELECT hour, AVG(trip_distance) AS avg_distance
+    FROM trips
+    GROUP BY hour
+    ORDER BY hour
+    """,
+    engine,
 )
 st.subheader("Average Trip Distance by Hour")
-st.line_chart(distance_by_hour)
+st.line_chart(distance_by_hour.set_index("hour"))
