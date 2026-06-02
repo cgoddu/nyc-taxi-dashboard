@@ -9,6 +9,4 @@ taxi.db
 .DS_Store
 
 
-data/*.parquet
-
 taxi.db
