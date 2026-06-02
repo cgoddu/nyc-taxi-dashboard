@@ -39,7 +39,7 @@ st.subheader("Trip Volume by Hour")
 st.bar_chart(
     trips_by_hour.set_index("hour")
 )
-#SQL
+# SQL
 query = """
 SELECT
     hour,
@@ -48,11 +48,12 @@ FROM trips
 GROUP BY hour
 ORDER BY hour
 """
-sql_trips = pd.read_sql(query, engine)
-st.subheader("Trip Volume by Hour (SQL)")
-st.bar_chart(
-    sql_trips.set_index("hour")
-)
+try:
+    sql_trips = pd.read_sql(query, engine)
+    st.subheader("Trip Volume by Hour (SQL)")
+    st.bar_chart(sql_trips.set_index("hour"))
+except Exception as e:
+    st.warning(f"SQL chart unavailable: {e}")
 
 #FareByHour
 fare_by_hour = (
@@ -61,7 +62,6 @@ fare_by_hour = (
 )
 st.subheader("Average Fare by Hour")
 st.line_chart(fare_by_hour)
-#SQL
 query = """
 SELECT
     hour,
@@ -70,14 +70,12 @@ FROM trips
 GROUP BY hour
 ORDER BY hour
 """
-sql_result = pd.read_sql(
-    query,
-    engine
-)
-st.subheader("Average Fare by Hour (SQL)")
-st.line_chart(
-    sql_result.set_index("hour")
-)
+try:
+    sql_result = pd.read_sql(query, engine)
+    st.subheader("Average Fare by Hour (SQL)")
+    st.line_chart(sql_result.set_index("hour"))
+except Exception as e:
+    st.warning(f"SQL chart unavailable: {e}")
 
 #TipByHour
 tip_by_hour = (

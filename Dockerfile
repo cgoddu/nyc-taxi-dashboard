@@ -6,6 +6,8 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN chmod +x scripts/docker-entrypoint.sh
+
 EXPOSE 8501
 
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]
+CMD ["sh", "scripts/docker-entrypoint.sh"]
