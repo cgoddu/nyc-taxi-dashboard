@@ -26,7 +26,7 @@ $Trust = @'
 }
 '@
 $TrustPath = Join-Path $env:TEMP "ecs-trust.json"
-$Trust | Set-Content $TrustPath -Encoding UTF8
+[System.IO.File]::WriteAllText($TrustPath, $Trust)
 $TrustFile = "file://" + ($TrustPath -replace '\\', '/')
 aws iam create-role --role-name $RoleName --assume-role-policy-document $TrustFile
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to create role." }
