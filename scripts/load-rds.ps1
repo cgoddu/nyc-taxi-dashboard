@@ -11,4 +11,4 @@ if (-not $env:DATABASE_URL) {
 Set-Location (Join-Path $PSScriptRoot "..")
 docker build -t nyc-taxi-app .
 docker run --rm -e DATABASE_URL="$env:DATABASE_URL" nyc-taxi-app python scripts/load_database.py
-Write-Host "Done. trips table should be in Aurora."
+Write-Host "Done. trips table should be in RDS."

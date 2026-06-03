@@ -13,20 +13,27 @@ $ImageUri = "$Registry/${Repo}:latest"
 Set-Location (Join-Path $PSScriptRoot "..")
 
 Write-Host "==> Ensuring ECR repository..."
-aws ecr describe-repositories --repository-names $Repo --region $Region 2>$null
-if ($LASTEXITCODE -ne 0) {
+$ErrorActionPreference = "Continue"
+aws ecr describe-repositories --repository-names $Repo --region $Region 2>$null | Out-Null
+$repoExists = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = "Stop"
+if (-not $repoExists) {
     aws ecr create-repository --repository-name $Repo --region $Region | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Error "Failed to create ECR repository." }
 }
 
 Write-Host "==> Logging in to ECR..."
 aws ecr get-login-password --region $Region | docker login --username AWS --password-stdin $Registry
+if ($LASTEXITCODE -ne 0) { Write-Error "ECR login failed." }
 
 Write-Host "==> Building image..."
 docker build -t $Repo .
+if ($LASTEXITCODE -ne 0) { Write-Error "Docker build failed." }
 
 Write-Host "==> Pushing image..."
 docker tag "${Repo}:latest" $ImageUri
 docker push $ImageUri
+if ($LASTEXITCODE -ne 0) { Write-Error "Docker push failed." }
 
 Write-Host ""
 Write-Host "Pushed: $ImageUri"

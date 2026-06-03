@@ -2,8 +2,12 @@
 $ErrorActionPreference = "Stop"
 $RoleName = "ecsTaskExecutionRole"
 
+$ErrorActionPreference = "Continue"
 aws iam get-role --role-name $RoleName 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
+$roleExists = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = "Stop"
+
+if ($roleExists) {
     Write-Host "Role $RoleName already exists."
     exit 0
 }
@@ -21,7 +25,10 @@ $Trust = @'
   ]
 }
 '@
-$Trust | Set-Content (Join-Path $env:TEMP "ecs-trust.json") -Encoding UTF8
-aws iam create-role --role-name $RoleName --assume-role-policy-document "file://$($env:TEMP -replace '\\','/')/ecs-trust.json"
+$TrustPath = Join-Path $env:TEMP "ecs-trust.json"
+$Trust | Set-Content $TrustPath -Encoding UTF8
+$TrustFile = "file://" + ($TrustPath -replace '\\', '/')
+aws iam create-role --role-name $RoleName --assume-role-policy-document $TrustFile
+if ($LASTEXITCODE -ne 0) { Write-Error "Failed to create role." }
 aws iam attach-role-policy --role-name $RoleName --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-Write-Host "Done. Run deploy-ecs.ps1 again."
+Write-Host "Done. Run deploy-ecs.ps1 next."
