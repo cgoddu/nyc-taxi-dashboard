@@ -17,8 +17,12 @@ if (-not $Password) {
     Write-Error "Set a password first: `$env:DB_PASSWORD = 'YourStrongPassword123!'"
 }
 
-$Existing = (aws rds describe-db-instances --db-instance-identifier $DbId --region $Region --query "DBInstances[0].DBInstanceStatus" --output text 2>$null).Trim()
-if ($Existing -and $Existing -ne "None") {
+$PrevErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+$Existing = (aws rds describe-db-instances --db-instance-identifier $DbId --region $Region --query "DBInstances[0].DBInstanceStatus" --output text 2>$null)
+$ErrorActionPreference = $PrevErrorAction
+if ($LASTEXITCODE -eq 0 -and $Existing -and $Existing.Trim() -ne "None") {
+    $Existing = $Existing.Trim()
     $Endpoint = (aws rds describe-db-instances --db-instance-identifier $DbId --region $Region --query "DBInstances[0].Endpoint.Address" --output text).Trim()
     Write-Host "Instance $DbId already exists (status: $Existing)."
     Write-Host "Endpoint: $Endpoint"
@@ -31,8 +35,15 @@ $VpcId = (aws ec2 describe-vpcs --region $Region --filters "Name=isDefault,Value
 
 Write-Host "==> Security group for RDS..."
 $SgName = "taxi-postgres-sg"
-$SgId = (aws ec2 describe-security-groups --region $Region --filters "Name=group-name,Values=$SgName" "Name=vpc-id,Values=$VpcId" --query "SecurityGroups[0].GroupId" --output text 2>$null).Trim()
-if (-not $SgId -or $SgId -eq "None") {
+$ErrorActionPreference = "Continue"
+$SgId = (aws ec2 describe-security-groups --region $Region --filters "Name=group-name,Values=$SgName" "Name=vpc-id,Values=$VpcId" --query "SecurityGroups[0].GroupId" --output text 2>$null)
+$ErrorActionPreference = "Stop"
+if ($LASTEXITCODE -ne 0 -or -not $SgId -or $SgId.Trim() -eq "None") {
+    $SgId = $null
+} else {
+    $SgId = $SgId.Trim()
+}
+if (-not $SgId) {
     $SgId = (aws ec2 create-security-group --group-name $SgName --description "RDS taxi postgres" --vpc-id $VpcId --region $Region --query GroupId --output text).Trim()
     aws ec2 authorize-security-group-ingress --group-id $SgId --protocol tcp --port 5432 --cidr 0.0.0.0/0 --region $Region 2>$null
     Write-Host "Created $SgId (5432 open for setup - restrict later)"
